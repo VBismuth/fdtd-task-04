@@ -11,39 +11,37 @@ if __name__ == '__main__':
     # Число Куранта
     Sc = 1.0
     
-    dx = 0.001
+    dx = 2e-3
     dt = 2e-12
 
     #Максимальная и минимальная частота, GHz
-    fmin = 4 
+    fmin = 5 
     fmax = 13
+
+    # Положение начала диэлектрика
+
+    d0 = 100
+    d1 = d0 + int(0.05/dx)
+    d2 = d1 + int(0.03/dx)
+    d3 = d2 + int(0.01/dx)
 
     # Время расчета в отсчетах
     maxTime = 500
 
     # Размер области моделирования в отсчетах
-    maxSize = 200
+    maxSize = d3+int(0.01/dx)
+
+    print(" maxSize = "+str(maxSize*dx)+"м\n",
+    "maxTime = "+str(maxTime*dt*1e9)+"нс\n",
+    "d0 = "+str(d0*dx)+"м", "d1 = "+str(d1*dx)+"м\n",
+    "d2 = "+str(d2*dx)+"м","d3 = "+str(d3*dx)+"м")
 
     # Положение источника в отсчетах
-    sourcePos = 30
-
-    # Параметры гармонического сигнала
-    # Количество ячеек на длину волны
-    Nl = 60
-
-    phi0 = -2 * numpy.pi / Nl
-    # phi0 = 0
+    sourcePos = 60
 
     # Датчики для регистрации поля
-    probesPos = [20, 60]
+    probesPos = [50, 60]
     probes = [tools.Probe(pos, maxTime) for pos in probesPos]
-
-    # Положение начала диэлектрика
-
-    d0 = 100
-    d1 = d0 + int(0.05//dx)
-    d2 = d1 + int(0.03//dx)
-    d3 = d2 + int(0.01//dx)
 
     # Параметры среды
     # Диэлектрическая проницаемость
@@ -63,7 +61,7 @@ if __name__ == '__main__':
     boundary_left = tools.ABCSecondLeft(eps[0], mu[0], Sc)
     boundary_right = tools.ABCSecondRight(eps[-1], mu[-1], Sc)
 
-    source = tools.HarmonicPlaneWave(Nl, phi0, Sc, eps[0], mu[0])
+    source = tools.GaussianPlaneWave(40.0, 12.0, Sc)
 
 
     # Параметры отображения поля E
@@ -106,7 +104,9 @@ if __name__ == '__main__':
 
         # Регистрация поля в датчиках
         for probe in probes:
-            probe.addData(Ez, Hy)
+            if probe.position != sourcePos or \
+            q < 80:
+                probe.addData(Ez, Hy)
 
         if q % 2 == 0:
             display.updateData(display_field, q)

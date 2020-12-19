@@ -17,27 +17,37 @@ def fract(A, B):
     else:
         return 0
 
-class HarmonicPlaneWave:
-    ''' Класс с уравнением плоской волны для гармонического сигнала в дискретном виде
-    Nl - количество ячеек на длину волны.
-    phi0 - начальная фаза.
-    Sc - число Куранта.
-    eps - относительная диэлектрическая проницаемость среды, в которой расположен источник.
-    mu - относительная магнитная проницаемость среды, в которой расположен источник.
-    '''
-    def __init__(self, Nl, phi0, Sc=1.0, eps=1.0, mu=1.0):
-        self.Nl = Nl
-        self.phi0 = phi0
+class GaussianPlaneWave:
+
+    def __init__(self, delay, width, Sc=1.0, eps=1.0, mu=1.0):
+        self.d = delay
+        self.w = width
         self.Sc = Sc
         self.eps = eps
         self.mu = mu
 
     def getE(self, m, q):
-        '''
-        Расчет поля E в дискретной точке пространства m
-        в дискретный момент времени q
-        '''
-        return numpy.sin(2 * numpy.pi / self.Nl * (self.Sc * q - numpy.sqrt(self.mu * self.eps) * m) + self.phi0)
+        return numpy.exp(-(((q - m * numpy.sqrt(self.eps * \
+        self.mu) / self.Sc) - self.d) / self.w) ** 2)
+
+class Probe:
+    def __init__(self, pos: int, T_max: int):
+        self.pos = pos
+        self.max = T_max
+        
+        self.E = zeros(T_max)
+        self.H = zeros(T_max)
+        
+        self.time = 0
+
+    def addData(self, E: List[float], H: List[float]):
+
+        if self.time<self.max:
+            self.E[self.time] = E[self.pos]
+            self.H[self.time] = H[self.pos]
+            self.time += 1
+        else:
+            print("Can't add more data")
 
 class Probe:
     '''
@@ -177,7 +187,7 @@ def ResultGraphs(probes: List[Probe], dt: float, fmin: float, fmax: float):
     plt.ylim(minYSize, maxYSize)
     plt.xlabel('t, нс')
     plt.ylabel('Ez, В/м')
-    plt.title("Падающий и отраженный\nсигналы")
+    plt.title("Отраженный и падающий\nсигналы, зарегистрированные датчиками")
     plt.grid()
 
     # Вывод сигналов в окно
@@ -199,20 +209,21 @@ def ResultGraphs(probes: List[Probe], dt: float, fmin: float, fmax: float):
     for En in E_f:
         plt.plot(xf*1e-9, numpy.abs(En))
     plt.legend(legend)
-    plt.title("АЧХ падающего и\nотраженного сигнала")
+    plt.title("АЧХ отраженного и\nпадающего сигналов")
     plt.grid()
 
     # Создание графикa |Г|
     plt.subplot(2, 1, 2)
-    Gf = [fract(E_f[0][n], E_f[1][n]) for n in range(3, 12)]
+    Gf = [fract(E_f[0][n], E_f[1][n]) for n in range(fmin, fmax+4)]
     plt.xlim(fmin, fmax)
-    f = [2*round(2e-9*max(xf)/len(xf),2)*m for m in range(1, 10)]
+    f = [2*round(1e-9*max(xf)/len(xf),2)*m for m in range(fmin, fmax+4)]
     plt.xlabel('f, ГГц')
     plt.ylabel('|Г(f)|')
     plt.xlim(fmin, fmax)
+    plt.ylim(0, 1)
     plt.plot(f, numpy.abs(Gf))
     plt.grid()
-    plt.title("Зависимость коэффициента отражения от частоты")
+    plt.title("Зависимость модуля коэффициента отражения от частоты")
     # Показать окно с графиками
     plt.show()
 
